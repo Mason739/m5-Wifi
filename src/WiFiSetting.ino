@@ -3,148 +3,147 @@
 #include <ESPmDNS.h>
 #include <WiFiClient.h>
 #include "WebServer.h"
-#include <Preferences.h>
 
 const IPAddress apIP(192, 168, 4, 1);
 const char* apSSID = "MY_WIFI_TEST";
-boolean settingMode;
-String ssidList;
-String wifi_ssid;
-String wifi_password;
+const char* apPASSWORD = "Mypassword";
 
 // DNSServer dnsServer;
 WebServer webServer(80);
 
-// wifi config store
-Preferences preferences;
-
 void setup() {
   m5.begin();
-  preferences.begin("wifi-config");
+  Serial2.begin(115200, SERIAL_8N1, 16, 17);
+
 
   delay(10);
 
-  settingMode = true;
   setupMode();
 }
 
 void loop() {
-  if (settingMode) {
-  }
+
   webServer.handleClient();
 }
 
 
-
-boolean checkConnection() {
-  int count = 0;
-  Serial.print("Waiting for Wi-Fi connection");
-  M5.Lcd.print("Waiting for Wi-Fi connection");
-  while ( count < 30 ) {
-    if (WiFi.status() == WL_CONNECTED) {
-      Serial.println();
-      M5.Lcd.println();
-      Serial.println("Connected!");
-      M5.Lcd.println("Connected!");
-      return (true);
-    }
-    delay(500);
-    Serial.print(".");
-    M5.Lcd.print(".");
-    count++;
-  }
-  Serial.println("Timed out.");
-  M5.Lcd.println("Timed out.");
-  return false;
-}
-
 void startWebServer() {
-  if (settingMode) {
-    Serial.print("Starting Web Server at ");
+
     M5.Lcd.print("Starting Web Server at ");
-    Serial.println(WiFi.softAPIP());
     M5.Lcd.println(WiFi.softAPIP());
-    webServer.on("/settings", []() {
-      String s = "<h1>Wi-Fi Settings</h1><p>Please enter your password by selecting the SSID.</p>";
-      s += "<form method=\"get\" action=\"setap\"><label>SSID: </label><select name=\"ssid\">";
-      s += ssidList;
-      s += "</select><br>Password: <input name=\"pass\" length=64 type=\"password\"><input type=\"submit\"></form>";
+    webServer.on("/", []() {
+      // String s = "<h1>Wi-Fi Settings</h1><p>Please enter your password by selecting the SSID.</p>";
+      // s += "<form method=\"get\" action=\"setap\"><label>SSID: </label><select name=\"ssid\">";
+      // s += ssidList;
+      // s += "</select><br>Password: <input name=\"pass\" length=64 type=\"password\"><input type=\"submit\"></form>";
+
+      String s = "<h1>Testing my m5Stack wifi network</h1>";
+
       webServer.send(200, "text/html", makePage("Wi-Fi Settings", s));
     });
-    webServer.on("/setap", []() {
-      String ssid = urlDecode(webServer.arg("ssid"));
-      Serial.print("SSID: ");
-      M5.Lcd.print("SSID: ");
-      Serial.println(ssid);
-      M5.Lcd.println(ssid);
-      String pass = urlDecode(webServer.arg("pass"));
-      Serial.print("Password: ");
-      M5.Lcd.print("Password: ");
-      Serial.println(pass);
-      M5.Lcd.println(pass);
-      Serial.println("Writing SSID to EEPROM...");
-      M5.Lcd.println("Writing SSID to EEPROM...");
 
-      // Store wifi config
-      Serial.println("Writing Password to nvr...");
-      M5.Lcd.println("Writing Password to nvr...");
-      preferences.putString("WIFI_SSID", ssid);
-      preferences.putString("WIFI_PASSWD", pass);
+    webServer.on("/go", []() {
+      // String s = "<h1>Wi-Fi Settings</h1><p>Please enter your password by selecting the SSID.</p>";
+      // s += "<form method=\"get\" action=\"setap\"><label>SSID: </label><select name=\"ssid\">";
+      // s += ssidList;
+      // s += "</select><br>Password: <input name=\"pass\" length=64 type=\"password\"><input type=\"submit\"></form>";
 
-      Serial.println("Write nvr done!");
-      M5.Lcd.println("Write nvr done!");
-      String s = "<h1>Setup complete.</h1><p>device will be connected to \"";
-      s += ssid;
-      s += "\" after the restart.";
+      String s = "<a href=\"/stop\">STOP</a>";
+
+      Serial2.printf("SS %6d %6d\r", 8000, 8000);
+      M5.Lcd.println("Going now!!!");
+
+
       webServer.send(200, "text/html", makePage("Wi-Fi Settings", s));
-      delay(3000);
-      ESP.restart();
+
     });
+
+    webServer.on("/button", []() {
+      // String s = "<h1>Wi-Fi Settings</h1><p>Please enter your password by selecting the SSID.</p>";
+      // s += "<form method=\"get\" action=\"setap\"><label>SSID: </label><select name=\"ssid\">";
+      // s += ssidList;
+      // s += "</select><br>Password: <input name=\"pass\" length=64 type=\"password\"><input type=\"submit\"></form>";
+      String s = "";
+      s += "<script>\n";
+      s += "const url='http://192.168.4.1/go';\n";
+      s += "const url2='http://192.168.4.1/stop';\n";
+      s += "const url3='http://192.168.4.1/reverse';\n";
+      s += "const url4='http://192.168.4.1/left';\n";
+      s += "const url5='http://192.168.4.1/right';\n";
+      s += "window.onkeydown = function(event) {\n";
+      s += "console.log(\"Key pressed\");\n";
+      s += "var Http = new XMLHttpRequest();\n";
+      s += "if (event.keyCode == 87) {\n";
+      s += "Http.open(\"GET\", url);\n";
+      s += "} else  if (event.keyCode == 83) {\n";
+      s += "Http.open(\"GET\", url3);\n";
+      s += "} else if (event.keyCode == 65) {\n";
+      s += "Http.open(\"GET\", url4);\n";
+      s += "} else  if (event.keyCode == 68) {\n";
+      s += "Http.open(\"GET\", url5);\n";
+      s += "}\n";
+      s += "Http.send();\n";
+      s += "}\n";
+      s += "\n";
+      s += "window.onkeyup = function(event) {\n";
+      s += "var Http2 = new XMLHttpRequest();\n";
+      s += "Http2.open(\"GET\", url2);\n";
+      s += "Http2.send();\n";
+      s += "}\n";
+      s += "\n";
+      s += "</script>\n";
+
+s += "<button onclick=\"Http.send();\">Click me</button>";
+
+
+
+
+      webServer.send(200, "text/html", makePage("Wi-Fi Settings", s));
+
+    });
+
+
+
+    webServer.on("/stop", []() {
+      // String s = "<h1>Wi-Fi Settings</h1><p>Please enter your password by selecting the SSID.</p>";
+      // s += "<form method=\"get\" action=\"setap\"><label>SSID: </label><select name=\"ssid\">";
+      // s += ssidList;
+      // s += "</select><br>Password: <input name=\"pass\" length=64 type=\"password\"><input type=\"submit\"></form>";
+
+
+
+      Serial2.printf("SS %6d %6d\r", 0, 0);
+    });
+
+
+    webServer.on("/reverse", []() {
+      Serial2.printf("SS %6d %6d\r", -8000, -8000);
+    });
+
+    webServer.on("/left", []() {
+      Serial2.printf("SS %6d %6d\r", -8000, 8000);
+    });
+
+    webServer.on("/right", []() {
+      Serial2.printf("SS %6d %6d\r", 8000, -8000);
+    });
+
+
+
+
     webServer.onNotFound([]() {
-      String s = "<h1>AP mode</h1><p><a href=\"/settings\">Wi-Fi Settings</a></p>";
+      String s = "<h1>Not found</h1>";
       webServer.send(200, "text/html", makePage("AP mode", s));
     });
-  }
-  else {
-    Serial.print("Starting Web Server at ");
-    M5.Lcd.print("Starting Web Server at ");
-    Serial.println(WiFi.localIP());
-    M5.Lcd.println(WiFi.localIP());
-    webServer.on("/", []() {
-      String s = "<h1>STA mode</h1><p><a href=\"/reset\">Reset Wi-Fi Settings</a></p>";
-      webServer.send(200, "text/html", makePage("STA mode", s));
-    });
-    webServer.on("/reset", []() {
-      // reset the wifi config
-      preferences.remove("WIFI_SSID");
-      preferences.remove("WIFI_PASSWD");
-      String s = "<h1>Wi-Fi settings was reset.</h1><p>Please reset device.</p>";
-      webServer.send(200, "text/html", makePage("Reset Wi-Fi Settings", s));
-      delay(3000);
-      ESP.restart();
-    });
-  }
+
+
   webServer.begin();
 }
 
 void setupMode() {
-  WiFi.mode(WIFI_MODE_STA);
-  WiFi.disconnect();
-  delay(100);
-  int n = WiFi.scanNetworks();
-  delay(100);
-  Serial.println("");
-  M5.Lcd.println("");
-  for (int i = 0; i < n; ++i) {
-    ssidList += "<option value=\"";
-    ssidList += WiFi.SSID(i);
-    ssidList += "\">";
-    ssidList += WiFi.SSID(i);
-    ssidList += "</option>";
-  }
-  delay(100);
+
   WiFi.softAPConfig(apIP, apIP, IPAddress(255, 255, 255, 0));
-  WiFi.softAP(apSSID);
+  WiFi.softAP(apSSID, apPASSWORD);
   WiFi.mode(WIFI_MODE_AP);
   // WiFi.softAPConfig(IPAddress local_ip, IPAddress gateway, IPAddress subnet);
   // WiFi.softAP(const char* ssid, const char* passphrase = NULL, int channel = 1, int ssid_hidden = 0);
@@ -157,6 +156,8 @@ void setupMode() {
   Serial.println("\"");
   M5.Lcd.println("\"");
 }
+
+
 
 String makePage(String title, String contents) {
   String s = "<!DOCTYPE html><html><head>";
